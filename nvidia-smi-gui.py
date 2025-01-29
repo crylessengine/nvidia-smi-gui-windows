@@ -7,16 +7,14 @@ from PyQt5.QtWidgets import QApplication
 import threading
 import time
 
-import sys
-import os
-import io
-import pty
+import subprocess # for windows
+# import pty  # for linux only
+
 import os
 import socket
 
 import argparse
 
-from subprocess import Popen, PIPE, STDOUT 
 
 # nvidia-smi --query-gpu=index,count,name,uuid,memory.used,memory.total,temperature.gpu,power.draw --format=csv,noheader,nounits -lms 500
 # nvidia-smi --query-compute-apps=gpu_uuid,pid,name,used_memory --format=csv,noheader,nounits -lms 500
@@ -98,7 +96,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.lbl_gpumodel.setGeometry(self.padding_left, self.padding_top, self.width() - self.padding_left - self.padding_right, 40)
         self.lbl_gpumodel.setStyleSheet(
             "QLabel#lbl_gpumodel {"
-            "   font-size: 26px; "
+            "   font-size: 24px; "
             "   qproperty-alignment: 'AlignVCenter | AlignLeft';"
             "}")
 
@@ -209,7 +207,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         )
         self.lbl_mem_used.setStyleSheet(
             "QLabel#lbl_mem_used{"
-            "   font-size:10px;"
+            "   font-size:12px;"
             "   qproperty-alignment: 'AlignVCenter | AlignCenter';"
             "}"
         )
@@ -232,7 +230,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         )
         self.lbl_mem_total.setStyleSheet(
             "QLabel#lbl_mem_total{"
-            "   font-size:10px;"
+            "   font-size:12px;"
             "   qproperty-alignment: 'AlignVCenter | AlignCenter';"
             "}"
         )
@@ -246,6 +244,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         )
         self.lbl_mem_percentage.setStyleSheet(
             "QLabel#lbl_mem_percentage{"
+            "   font-size:15px;"
             "   qproperty-alignment: 'AlignVCenter | AlignRight';"
             "}"
         )
@@ -323,6 +322,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         )
         self.lbl_power_percentage.setStyleSheet(
             "QLabel#lbl_power_percentage{"
+            "   font-size:15px;"
             "   qproperty-alignment: 'AlignVCenter | AlignRight';"
             "}"
         )
@@ -544,19 +544,31 @@ class MainWindow(QtWidgets.QWidget):
         self.move(qr.topLeft())
     pass
 
-
+# this is code for Windows
 def get_iostream(commandline):
-
-    stdout_master, stdout_slave = pty.openpty()
-    stderr_master, stderr_slave = pty.openpty()
-    
-    proc = Popen(commandline, stdin=PIPE, stdout=stdout_slave, stderr=stderr_slave, close_fds=True)
-    
-    pstdout = os.fdopen(stdout_master)
-    pstderr = os.fdopen(stderr_master)
-     
+    proc = subprocess.Popen(commandline,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            bufsize=1,
+                            universal_newlines=True)
+    pstdout = proc.stdout
+    pstderr = proc.stderr
     return proc, pstdout, pstderr
 
+# this is code for Linux
+# def get_iostream(commandline):
+#
+#     stdout_master, stdout_slave = pty.openpty()
+#     stderr_master, stderr_slave = pty.openpty()
+#
+#     proc = Popen(commandline, stdin=PIPE, stdout=stdout_slave, stderr=stderr_slave, close_fds=True)
+#
+#     pstdout = os.fdopen(stdout_master)
+#     pstderr = os.fdopen(stderr_master)
+#
+#     return proc, pstdout, pstderr
 
 def proc_smireader(fields, main_window, smi_stdout, proc):
     global is_running
