@@ -622,7 +622,7 @@ def main():
 
     args = parse_args()
 
-    cmd_gpu_stat = ["nvidia-smi", "--query-gpu=" + ",".join(fields), "--format=csv,noheader,nounits", "-lms", "300"]
+    cmd_gpu_stat = ["nvidia-smi", "--query-gpu=" + ",".join(fields), "--format=csv,noheader,nounits", "-lms", "500"]
 
     if args.host is not None:
         cmd_gpu_stat = ["ssh", "-p", str(args.port), args.host] + cmd_gpu_stat
@@ -645,7 +645,7 @@ def main():
         if not mw.isVisible():
             # app exit.
             break
-        time.sleep(0.05)
+        time.sleep(0.1)
 
     is_running = False
     th.join()
