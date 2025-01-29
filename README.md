@@ -18,7 +18,7 @@ or
 
 or build exe package using pyinstaller:
 
-    $ pyinstaller --onefile --windowed --add-data "resources\*.svg:./resources" .\nvidia-smi-gui.py
+    $ pyinstaller --onefile --windowed --icon=resources/nvidia-smi.ico --add-data "resources\*.svg:./resources" .\nvidia-smi-gui.py
 
 or just use the pre-built exe package in the `dist` folder.
 
