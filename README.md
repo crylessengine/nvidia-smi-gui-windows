@@ -1,10 +1,10 @@
 # nvidia-smi-gui
-A Qt based GUI backend for monitering nvidia graphic devices through nvidia-smi.
+A Qt based GUI backend for monitering nvidia graphic devices through nvidia-smi. Modified to run on Windows.
 
 ## Dependencies:
 * nvidia-smi
 * python3
-* python3-pyqt4
+* python3-pyqt5
 
 ## How to Use It
 simply fire up python3 to start the monitor, you will need PyQt4 and nvidia-smi successfully installed to run the script:
