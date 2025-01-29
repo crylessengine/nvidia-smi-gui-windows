@@ -552,7 +552,9 @@ def get_iostream(commandline):
                             stderr=subprocess.PIPE,
                             text=True,
                             bufsize=1,
-                            universal_newlines=True)
+                            universal_newlines=True,
+                            creationflags=subprocess.CREATE_NO_WINDOW # hide console window
+                            )
     pstdout = proc.stdout
     pstderr = proc.stderr
     return proc, pstdout, pstderr
