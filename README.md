@@ -16,6 +16,13 @@ or
     $ chmod +x ./nvidia-smi-gui.py
     $ ./nvidia-smi-gui.py
 
+or build exe package using pyinstaller:
+
+    $ pyinstaller --onefile --windowed --add-data "resources\*.svg:./resources" .\nvidia-smi-gui.py
+
+or just use the pre-built exe package in the `dist` folder.
+
+
 ## Screenshots
 ![Screenshot1](https://raw.github.com/imkzh/nvidia-smi-gui/master/screenshots/1.png "Status of the GPU installed on my computer")
 
