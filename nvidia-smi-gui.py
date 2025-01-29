@@ -434,6 +434,9 @@ class GPUInfoPanel(QtWidgets.QWidget):
         if "clocks.current.memory" in smi_data:
             self.lbl_clock.setText(smi_data["clocks.current.memory"] + "MHz")
 
+        if "clocks.current.graphics" in smi_data:
+            self.lbl_clock.setText(smi_data["clocks.current.graphics"] + "MHz")
+
         if "memory.used" in smi_data:
             self.lbl_mem_used.setText(smi_data["memory.used"] + "M")
 
