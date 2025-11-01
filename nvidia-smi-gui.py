@@ -32,13 +32,16 @@ def res(res_name):
 class GPUInfoPanel(QtWidgets.QWidget):
             
     signal_update = QtCore.pyqtSignal(dict, name="SIGNAL_UPDATE")
+    signal_process_update = QtCore.pyqtSignal(dict, name="SIGNAL_PROCESS_UPDATE")
     
     def __init__(self, window_name="", *args, **kwargs):
         super(GPUInfoPanel, self).__init__(*args, **kwargs)
 
         self.setObjectName("GPU_PNL")
         self.setWindowTitle(window_name)
-        self.setFixedSize(500, 146)
+        self.setFixedSize(500, 1024)  # Increased height to accommodate process list
+        
+        self.gpu_uuid = None  # Store GPU UUID for process matching
 
         self.padding_top = 5
         self.padding_left = 10
@@ -47,9 +50,28 @@ class GPUInfoPanel(QtWidgets.QWidget):
 
         self.margin = 10
 
+        # Main GPU Info
         self.lbl_gpumodel = QtWidgets.QLabel("Graphics Device", self)
         self.lbl_gpuid = QtWidgets.QLabel("#0", self)
         self.lbl_pcibusid = QtWidgets.QLabel("bus: 00000000:00:00.0", self)
+        
+        # Process List Section
+        self.lbl_processes = QtWidgets.QLabel("Running Processes:", self)
+        self.process_list = QtWidgets.QTableWidget(self)
+        # Only PID and Name columns; Memory column removed per request
+        self.process_list.setColumnCount(2)
+        self.process_list.setHorizontalHeaderLabels(["PID", "Name"])
+        self.process_list.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+        self.process_list.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        # make the table visible and user-friendly even when empty
+        self.process_list.setShowGrid(True)
+        self.process_list.setAlternatingRowColors(True)
+        self.process_list.setMinimumHeight(60)
+        self.process_list.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        # smaller font so long executable paths fit better and reduce wrapping
+        self.process_list.setStyleSheet("QTableWidget { font-size: 10px; }")
+        self.process_list.setWordWrap(False)
+        self.process_list.verticalHeader().setDefaultSectionSize(20)
         
         self.lbl_temp = QtWidgets.QLabel("37deg", self)
         self.lbl_fan = QtWidgets.QLabel("20%", self)
@@ -79,12 +101,46 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.sep_panel = QtWidgets.QWidget(self)
 
         self.signal_update.connect(self.update_info)
+        self.signal_process_update.connect(self.update_process_info)
         self.init_ui()
         
+    def update_process_info(self, proc_data):
+        # Update process list
+        pid = proc_data["pid"]
+        process_name = proc_data["process_name"]
+        # Check if process already exists in the list
+        found = False
+        for row in range(self.process_list.rowCount()):
+            if self.process_list.item(row, 0).text() == pid:
+                # update name (path) and tooltip in case it changed
+                display_name = process_name
+                if len(process_name) > 60:
+                    display_name = process_name[:30] + " ... " + process_name[-25:]
+                self.process_list.item(row, 1).setText(display_name)
+                self.process_list.item(row, 1).setToolTip(process_name)
+                found = True
+                break
+        
+        if not found:
+            row = self.process_list.rowCount()
+            self.process_list.insertRow(row)
+            self.process_list.setItem(row, 0, QtWidgets.QTableWidgetItem(pid))
+            display_name = process_name
+            if len(process_name) > 60:
+                display_name = process_name[:30] + " ... " + process_name[-25:]
+            item_name = QtWidgets.QTableWidgetItem(display_name)
+            item_name.setToolTip(process_name)
+            self.process_list.setItem(row, 1, item_name)
+            
     def init_ui(self):
 
-        ## Self geometry
-        self.setFixedSize(460, 146)
+        ## Self geometry (make room for a right-side process table)
+        self.setFixedSize(900, 300)
+        # reserve left area for GPU info and right area for process table
+        right_x = int(self.width() * 0.52)
+        left_content_right = right_x - 16
+        left_width = left_content_right - self.padding_left
+
         self.setStyleSheet(
             "QWidget#GPU_PNL {"
             "   background-color: white;"
@@ -93,7 +149,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         # btn_connect geometry
         ## lbl_gpumodel geometry
         self.lbl_gpumodel.setObjectName("lbl_gpumodel")
-        self.lbl_gpumodel.setGeometry(self.padding_left, self.padding_top, self.width() - self.padding_left - self.padding_right, 40)
+        self.lbl_gpumodel.setGeometry(self.padding_left, self.padding_top, left_width, 40)
         self.lbl_gpumodel.setStyleSheet(
             "QLabel#lbl_gpumodel {"
             "   font-size: 24px; "
@@ -172,7 +228,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
             "}")
 
         spring = [(self.icon_utilization, self.lbl_utilization), (self.icon_temp, self.lbl_temp), (self.icon_fan, self.lbl_fan), (self.icon_clock, self.lbl_clock)]
-        spring_geometry = (self.padding_left, self.lbl_pcibusid.y() + self.lbl_pcibusid.height() + self.margin, self.width() - self.padding_left - self.padding_right, 24)
+        spring_geometry = (self.padding_left, self.lbl_pcibusid.y() + self.lbl_pcibusid.height() + self.margin, left_width, 24)
         spring_x, spring_y, spring_w, spring_h = spring_geometry
 
         item_width = spring_w // len(spring)
@@ -238,7 +294,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         # mem percentage:
         self.lbl_mem_percentage.setObjectName("lbl_mem_percentage")
         self.lbl_mem_percentage.setGeometry(
-            self.width() - self.padding_right - 30,
+            left_content_right - 30,
             self.icon_mem.y(),
             30, self.icon_mem.height()
         )
@@ -252,10 +308,12 @@ class GPUInfoPanel(QtWidgets.QWidget):
         # mem usage bar
         self.progress_mem.setObjectName("progress_mem")
         self.progress_mem.setTextVisible(False)
+        mem_bar_x = self.lbl_mem_used.x() + self.lbl_mem_used.width() + self.margin
+        mem_bar_w = left_content_right - mem_bar_x - self.lbl_mem_percentage.width() - self.margin
         self.progress_mem.setGeometry(
-            self.lbl_mem_used.x() + self.lbl_mem_used.width() + self.margin,
+            mem_bar_x,
             self.lbl_mem_used.y(),
-            self.width() - self.lbl_mem_used.x() - self.lbl_mem_used.width() - self.margin - self.lbl_mem_percentage.width() - self.margin - self.padding_left,
+            mem_bar_w,
             self.icon_mem.height()
         )
 
@@ -316,7 +374,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         # power percentage:
         self.lbl_power_percentage.setObjectName("lbl_power_percentage")
         self.lbl_power_percentage.setGeometry(
-            self.width() - self.padding_right - self.lbl_mem_percentage.width(),
+            left_content_right - self.lbl_mem_percentage.width(),
             self.icon_power.y(),
             self.lbl_mem_percentage.width(), self.icon_power.height()
         )
@@ -329,10 +387,12 @@ class GPUInfoPanel(QtWidgets.QWidget):
         # power usage bar
         self.progress_power.setObjectName("progress_power")
         self.progress_power.setTextVisible(False)
+        power_bar_x = self.lbl_power_draw.x() + self.lbl_power_draw.width() + self.margin
+        power_bar_w = left_content_right - power_bar_x - self.lbl_power_percentage.width() - self.margin
         self.progress_power.setGeometry(
-            self.lbl_power_draw.x() + self.lbl_power_draw.width() + self.margin,
+            power_bar_x,
             self.lbl_power_draw.y(),
-            self.width() - self.lbl_power_draw.x() - self.lbl_power_draw.width() - self.margin - self.lbl_power_percentage.width() - self.margin - self.padding_left,
+            power_bar_w,
             self.icon_power.height()
         )
 
@@ -364,9 +424,49 @@ class GPUInfoPanel(QtWidgets.QWidget):
             "}"
         )
 
-        self.setFixedHeight(self.icon_power.y() + self.icon_power.height() + self.padding_bottom)
+        # Process list layout
+    # Position the processes label and table below the power row
+    # place the process table to the right of the GPU info block (use right_x from top-of-method)
+    # (do not redefine right_x here)
+        self.lbl_processes.setGeometry(
+            right_x + 10,
+            self.padding_top + 10,
+            self.width() - right_x - self.padding_right - 10,
+            20
+        )
+        self.lbl_processes.setStyleSheet(
+            "QLabel{"
+            "   font-size: 12px;"
+            "   font-weight: bold;"
+            "}"
+        )
+        
+        proc_x = right_x + 10
+        proc_w = self.width() - proc_x - self.padding_right
+        proc_h = 220  # show ~10 rows without scrolling
+        self.process_list.setGeometry(
+            proc_x,
+            self.lbl_processes.y() + self.lbl_processes.height() + 5,
+            proc_w,
+            proc_h
+        )
+        # Configure column widths: PID (small), Name (stretch), Memory (small)
+        try:
+            self.process_list.setColumnWidth(0, 70)
+            # Name column will stretch to remaining space so executable path is visible
+            self.process_list.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        except Exception:
+            pass
+        
+        # Now that all child widgets have been positioned calculate final panel height
+        final_height = self.process_list.y() + self.process_list.height() + self.padding_bottom
+        # enforce a minimum so layout doesn't collapse on small content
+        min_height = self.icon_power.y() + self.icon_power.height() + self.padding_bottom
+        if final_height < min_height:
+            final_height = min_height
+        self.setFixedHeight(final_height)
 
-        ## Panel Seperator
+        ## Panel Seperator (positioned at the bottom of the panel)
         self.sep_panel.setObjectName("sep_panel")
         self.sep_panel.setGeometry(
             self.padding_left * 2, self.height() - 1,
@@ -377,7 +477,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
             "   background-color: #aaa;"
             "}"
         )
-
+        
         ## Load images for each icon.
         self.icon_utilization.setIcon(QtGui.QIcon(res("gear.svg")))
         self.icon_utilization.setIconSize(self.icon_utilization.size())
@@ -427,6 +527,9 @@ class GPUInfoPanel(QtWidgets.QWidget):
 
         if "name" in smi_data:
             self.lbl_gpumodel.setText(smi_data["name"])
+            
+        if "uuid" in smi_data:
+            self.gpu_uuid = smi_data["uuid"]
 
         if "utilization.gpu" in smi_data:
             self.lbl_utilization.setText(smi_data["utilization.gpu"] + "%")
@@ -478,6 +581,9 @@ class GPUInfoPanel(QtWidgets.QWidget):
 
     def update_async(self, smi_data):
         self.signal_update.emit(smi_data)
+        
+    def update_process_async(self, proc_data):
+        self.signal_process_update.emit(proc_data)
 
 
 class MainWindow(QtWidgets.QWidget):
@@ -580,7 +686,6 @@ def proc_smireader(fields, main_window, smi_stdout, proc):
     is_running = True
     
     while is_running:
-
         smi_line = smi_stdout.readline().strip()
         smi_data = {k: v for k, v in zip(fields, smi_line.split(", "))}
 
@@ -590,8 +695,26 @@ def proc_smireader(fields, main_window, smi_stdout, proc):
             pnl.update_async(smi_data)
         else:
             main_window.panel_list[idx].update_async(smi_data)
+    
+    proc.kill()
 
-        # print("[", threading.current_thread().name, "]", "SMI-DATA:", smi_line)
+def proc_processreader(fields, main_window, smi_stdout, proc):
+    global is_running
+    
+    processes_by_gpu = {}
+    
+    while is_running:
+        smi_line = smi_stdout.readline().strip()
+        if not smi_line:
+            continue
+            
+        proc_data = {k: v for k, v in zip(fields, smi_line.split(", "))}
+        
+        # Find the panel with matching GPU UUID
+        for panel in main_window.panel_list:
+            if panel.gpu_uuid == proc_data["gpu_uuid"]:
+                panel.update_process_async(proc_data)
+                break
     
     proc.kill()
 
@@ -607,7 +730,7 @@ def parse_args():
 def main():
     global is_running
     
-    fields = [
+    gpu_fields = [
         "index",
         "count",
         "pci.bus_id",
@@ -622,25 +745,37 @@ def main():
         "fan.speed",
         "utilization.gpu"
     ]
+    
+    proc_fields = [
+        "gpu_uuid",
+        "pid",
+        "process_name",
+        "used_memory"
+    ]
 
     args = parse_args()
 
-    cmd_gpu_stat = ["nvidia-smi", "--query-gpu=" + ",".join(fields), "--format=csv,noheader,nounits", "-lms", "500"]
+    cmd_gpu_stat = ["nvidia-smi", "--query-gpu=" + ",".join(gpu_fields), "--format=csv,noheader,nounits", "-lms", "500"]
+    cmd_proc_stat = ["nvidia-smi", "--query-compute-apps=" + ",".join(proc_fields), "--format=csv,noheader,nounits", "-lms", "500"]
 
     if args.host is not None:
         cmd_gpu_stat = ["ssh", "-p", str(args.port), args.host] + cmd_gpu_stat
+        cmd_proc_stat = ["ssh", "-p", str(args.port), args.host] + cmd_proc_stat
         hostname = args.host
     else:
         hostname = socket.gethostname()
 
     proc_gpu_stat, gpu_stat, _ = get_iostream(cmd_gpu_stat)
+    proc_proc_stat, proc_stat, _ = get_iostream(cmd_proc_stat)
 
     app = QApplication([""])
 
     mw = MainWindow(window_name="GPU Status on " + hostname)
 
-    th = threading.Thread(target=proc_smireader, name="SMI-StdoutReader", args=(fields, mw, gpu_stat, proc_gpu_stat), daemon=True)
-    th.start()
+    th_gpu = threading.Thread(target=proc_smireader, name="SMI-GPU-Reader", args=(gpu_fields, mw, gpu_stat, proc_gpu_stat), daemon=True)
+    th_proc = threading.Thread(target=proc_processreader, name="SMI-Process-Reader", args=(proc_fields, mw, proc_stat, proc_proc_stat), daemon=True)
+    th_gpu.start()
+    th_proc.start()
     mw.show()
 
     while True:
@@ -651,7 +786,8 @@ def main():
         time.sleep(0.1)
 
     is_running = False
-    th.join()
+    th_gpu.join()
+    th_proc.join()
 
 
 if __name__ == "__main__":
