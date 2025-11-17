@@ -69,7 +69,19 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.process_list.setMinimumHeight(60)
         self.process_list.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         # smaller font so long executable paths fit better and reduce wrapping
-        self.process_list.setStyleSheet("QTableWidget { font-size: 10px; }")
+        self.process_list.setStyleSheet(
+            "QTableWidget {"
+            "   font-size: 10px;"
+            "   background-color: #1e1e1e;"
+            "   color: #DDDDDD;"
+            "   gridline-color: #333333;"
+            "   alternate-background-color: #151515;"
+            "}"
+            "QHeaderView::section {"
+            "   background-color: #222222;"
+            "   color: #EEEEEE;"
+            "   padding: 4px;"
+            "}")
         self.process_list.setWordWrap(False)
         self.process_list.verticalHeader().setDefaultSectionSize(20)
         
@@ -143,7 +155,8 @@ class GPUInfoPanel(QtWidgets.QWidget):
 
         self.setStyleSheet(
             "QWidget#GPU_PNL {"
-            "   background-color: white;"
+            "   background-color: #121212;"
+            "   color: #DDDDDD;"
             "}")
 
         # btn_connect geometry
@@ -189,9 +202,10 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.icon_fan.setStyleSheet(
             "QPushButton#icon_fan{"
             "   border-width: 1px;"
-            "   border-color: #aaa;"
+            "   border-color: #444;"
             "   border-style: none;"
-            "   background-color: none;"
+            "   background-color: transparent;"
+            "   color: #DDD;"
             "}")
 
         self.lbl_clock.setObjectName("lbl_clock")
@@ -200,9 +214,10 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.icon_clock.setStyleSheet(
             "QPushButton#icon_clock{"
             "   border-width: 1px;"
-            "   border-color: #aaa;"
+            "   border-color: #444;"
             "   border-style: solid;"
-            "   background-color: none;"
+            "   background-color: transparent;"
+            "   color: #DDD;"
             "}")
 
         self.lbl_temp.setObjectName("lbl_temp")
@@ -211,9 +226,10 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.icon_temp.setStyleSheet(
             "QPushButton#icon_temp{"
             "   border-width: 1px;"
-            "   border-color: #aaa;"
+            "   border-color: #444;"
             "   border-style: none;"
-            "   background-color: none;"
+            "   background-color: transparent;"
+            "   color: #DDD;"
             "}")
 
         self.lbl_utilization.setObjectName("lbl_utilization")
@@ -222,9 +238,10 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.icon_utilization.setStyleSheet(
             "QPushButton#icon_utilization{"
             "   border-width: 1px;"
-            "   border-color: #aaa;"
+            "   border-color: #444;"
             "   border-style: none;"
-            "   background-color: none;"
+            "   background-color: transparent;"
+            "   color: #DDD;"
             "}")
 
         spring = [(self.icon_utilization, self.lbl_utilization), (self.icon_temp, self.lbl_temp), (self.icon_fan, self.lbl_fan), (self.icon_clock, self.lbl_clock)]
@@ -248,9 +265,10 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.icon_mem.setStyleSheet(
             "QPushButton#icon_mem{"
             "   border-width: 1px;"
-            "   border-color: #aaa;"
+            "   border-color: #444;"
             "   border-style: none;"
-            "   background-color: none;"
+            "   background-color: transparent;"
+            "   color: #DDD;"
             "}")
 
         # mem used label geometry
@@ -328,9 +346,10 @@ class GPUInfoPanel(QtWidgets.QWidget):
         self.icon_power.setStyleSheet(
             "QPushButton#icon_power{"
             "   border-width: 1px;"
-            "   border-color: #aaa;"
+            "   border-color: #444;"
             "   border-style: none;"
-            "   background-color: none;"
+            "   background-color: transparent;"
+            "   color: #DDD;"
             "}")
 
         # power draw label geometry
@@ -398,28 +417,17 @@ class GPUInfoPanel(QtWidgets.QWidget):
 
         self.setStyleSheet(
             "QProgressBar {"
-            "   border: 2px solid #eee;"
+            "   border: 2px solid #444444;"
             "   text-align: top;"
             "   padding: 1px;"
-            "   /* border-top-left-radius: 11px;"
-            "   border-bottom-left-radius: 11px; */ "
             "   border-radius: 8px;"
-            "   /* background: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,"
-            "       stop: 0 #fff,"
-            "       stop: 1 #eee "
-            "   ); */"
-            "   background: #eee;"
+            "   background: #222222;"
             "   width: 15px;"
             "   outline: none;"
+            "   color: #EEEEEE;"
             "}"
-            "QProgressBar::chunk {"  # 
-            "   /* background: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1,"
-            "       stop: 0 #007fff,"
-            "       stop: 1 #005dba"
-            "   ); */"
-            "   background: #007fff;"
-            "   /* border-top-left-radius: 10px;"
-            "   border-bottom-left-radius: 10px; */"
+            "QProgressBar::chunk {"
+            "   background: #3399FF;"
             "   border-radius: 6px;"
             "}"
         )
@@ -474,7 +482,7 @@ class GPUInfoPanel(QtWidgets.QWidget):
         )
         self.sep_panel.setStyleSheet(
             "QWidget#sep_panel{"
-            "   background-color: #aaa;"
+            "   background-color: #444444;"
             "}"
         )
         
@@ -607,7 +615,8 @@ class MainWindow(QtWidgets.QWidget):
         self.setObjectName("MainWindow")
         self.setStyleSheet(
             "QWidget#MainWindow {"
-            "   background-color: white;"
+            "   background-color: #121212;"
+            "   color: #DDDDDD;"
             "}"
         )
 
@@ -769,6 +778,17 @@ def main():
     proc_proc_stat, proc_stat, _ = get_iostream(cmd_proc_stat)
 
     app = QApplication([""])
+
+    # Global dark stylesheet to ensure readable text and table colors
+    app.setStyleSheet(
+        "QWidget { background-color: #121212; color: #DDDDDD; }"
+        "QLabel, QLineEdit, QPushButton, QProgressBar { color: #DDDDDD; }"
+        "QTableWidget { background-color: #1e1e1e; color: #DDDDDD; alternate-background-color: #151515; gridline-color: #333333; }"
+        "QHeaderView::section { background-color: #222222; color: #EEEEEE; }"
+        "QTableWidget QTableCornerButton::section { background-color: #222222; }"
+        "QMenu { background-color: #121212; color: #DDDDDD; }"
+        "QToolTip { background-color: #333333; color: #FFFFFF; }"
+    )
 
     mw = MainWindow(window_name="GPU Status on " + hostname)
 
